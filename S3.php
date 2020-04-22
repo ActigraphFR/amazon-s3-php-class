@@ -102,6 +102,19 @@ class S3
 	 */
 	public static $region = '';
 
+	 /**
+	 * Force path style for bucket endpoint
+	 *
+	 * Instead of using the DNS name of the bucket (e.g. BUCKET.s3.amazonaws.com)
+	 * use the path style (e.g. s3.amazonaws.com/BUCKET/). This is useful when
+	 * using a custom endpoint.
+	 *
+	 * @var bool
+	 * @acess public
+	 * @static
+	 */
+	public static $forcePathStyle = false;
+	
 	/**
 	 * Proxy information
 	 *
@@ -217,13 +230,14 @@ class S3
 	* @param string $endpoint Amazon URI
 	* @return void
 	*/
-	public function __construct($accessKey = null, $secretKey = null, $useSSL = false, $endpoint = 's3.amazonaws.com', $region = '')
+	public function __construct($accessKey = null, $secretKey = null, $useSSL = false, $endpoint = 's3.amazonaws.com', $region = '', $forcePathStyle = false)
 	{
 		if ($accessKey !== null && $secretKey !== null)
 			self::setAuth($accessKey, $secretKey);
 		self::$useSSL = $useSSL;
 		self::$endpoint = $endpoint;
 		self::$region = $region;
+		self::$forcePathStyle = $forcePathStyle;
 	}
 
 
@@ -274,7 +288,17 @@ class S3
 		return empty($region) ? 'us-east-1' : $region;
 	}
 
-
+	/**
+	* Use bucket path style
+	*
+	* @param bool $enabled Use path style
+	* @return void
+	*/
+	public function setForcePathStyle($enabled = 1)
+	{
+		self::$forcePathStyle = $enabled;
+	}
+	
 	/**
 	* Set AWS access key and secret key
 	*
@@ -2474,6 +2498,7 @@ final class S3Request
 	*/
 	private function __dnsBucketName($bucket)
 	{
+		if (S3::$forcePathStyle) return false;
 		if (strlen($bucket) > 63 || preg_match("/[^a-z0-9\.-]/", $bucket) > 0) return false;
 		if (S3::$useSSL && strstr($bucket, '.') !== false) return false;
 		if (strstr($bucket, '-.') !== false) return false;
